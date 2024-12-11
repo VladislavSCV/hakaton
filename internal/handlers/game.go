@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"hakaton/internal/models"
 	"net/http"
 )
 
@@ -30,9 +31,9 @@ func (h *Handler) SaveImageHandler(c *gin.Context) {
 // CreateGameHandler создает новую игру
 func (h *Handler) CreateGameHandler(c *gin.Context) {
 	var req struct {
-		CompanyID string `json:"company_id"`
-		Name      string `json:"name"`
-		Data      string `json:"data"`
+		CompanyID string      `json:"company_id"`
+		Name      string      `json:"name"`
+		Data      models.Game `json:"data"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -40,7 +41,7 @@ func (h *Handler) CreateGameHandler(c *gin.Context) {
 		return
 	}
 
-	err := h.repoGame.CreateGame(req.CompanyID, req.Name, req.Data)
+	err := h.repoGame.CreateOrUpdateGame(req.CompanyID, req.Name, req.Data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create game"})
 		return
@@ -77,17 +78,18 @@ func (h *Handler) UpdateGameHandler(c *gin.Context) {
 }
 
 // GetGameByNameHandler получает игру по имени и компании
-func (h *Handler) GetGameByNameHandler(c *gin.Context) {
-	companyIDStr := c.Param("company_id")
-	name := c.Param("name")
+func (h *Handler) GetGame(c *gin.Context) {
+	var input struct {
+		CompanyID string `json:"company_id" binding:"required"`
+		Name      string `json:"name"`
+	}
 
-	//companyID, err := strconv.Atoi(companyIDStr)
-	//if err != nil {
-	//	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid company ID"})
-	//	return
-	//}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
 
-	game, err := h.repoGame.GetGameByName(companyIDStr, name)
+	game, err := h.repoGame.GetGameByName(input.CompanyID, input.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get game"})
 		return

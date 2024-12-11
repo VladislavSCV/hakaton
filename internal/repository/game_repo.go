@@ -2,6 +2,8 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"hakaton/internal/models"
 )
 
@@ -69,14 +71,77 @@ func (r *GameRepository) GetGameByName(companyID, name string) (*models.Game, er
 	return &game, nil
 }
 
-// CreateGame создает новую игру
-func (r *GameRepository) CreateGame(compId, name, data string) error {
-	query := `INSERT INTO games (name, data, company_id, created_at, updated_at) 
-	VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+// CreateOrUpdateGame обрабатывает создание или обновление игры
+func (r *GameRepository) CreateOrUpdateGame(compID, name string, data models.Game) error {
+	// Проверяем, существует ли игра
+	gameID, err := r.GetGameID(compID, name)
+	if err != nil {
+		return fmt.Errorf("failed to check game existence: %w", err)
+	}
 
-	_, err := r.db.Exec(query, name, data, compId)
-	return err
+	// Сериализуем структуру данных в JSON
+	dataJSON, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal game data: %w", err)
+	}
+
+	if gameID > 0 {
+		// Игра существует — обновляем данные
+		updateQuery := `UPDATE games SET data = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
+		_, err = r.db.Exec(updateQuery, dataJSON, gameID)
+		if err != nil {
+			return fmt.Errorf("failed to update game: %w", err)
+		}
+	} else {
+		// Игра не существует — создаём новую запись
+		insertQuery := `INSERT INTO games (company_id, name, data, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+		_, err = r.db.Exec(insertQuery, compID, name, dataJSON)
+		if err != nil {
+			return fmt.Errorf("failed to create game: %w", err)
+		}
+	}
+
+	return nil
 }
+
+func (r *GameRepository) GetGameID(compID, name string) (int, error) {
+	var gameID int
+	query := `SELECT id FROM games WHERE company_id = $1 AND name = $2`
+	err := r.db.QueryRow(query, compID, name).Scan(&gameID)
+
+	if err == sql.ErrNoRows {
+		return 0, nil // Игры нет в базе
+	}
+	if err != nil {
+		return 0, err // Произошла ошибка
+	}
+
+	return gameID, nil // Возвращаем ID игры
+}
+
+//
+//// CreateOrUpdateGame создает новую игру или обновляет существующую
+//func (r *GameRepository) CreateOrUpdateGame(name, data, compID string) error {
+//	// Проверяем, существует ли запись
+//	var exists bool
+//	checkQuery := `SELECT EXISTS (SELECT 1 FROM games WHERE name = $1 AND company_id = $2)`
+//	err := r.db.QueryRow(checkQuery, name, compID).Scan(&exists)
+//	if err != nil {
+//		return err
+//	}
+//
+//	if exists {
+//		// Обновляем существующую запись
+//		updateQuery := `UPDATE games SET data = $1, updated_at = CURRENT_TIMESTAMP WHERE name = $2 AND company_id = $3`
+//		_, err = r.db.Exec(updateQuery, data, name, compID)
+//		return err
+//	} else {
+//		// Вставляем новую запись
+//		insertQuery := `INSERT INTO games (name, data, company_id, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+//		_, err = r.db.Exec(insertQuery, name, data, compID)
+//		return err
+//	}
+//}
 
 // UpdateGame обновляет данные игры по ее ID
 func (r *GameRepository) UpdateGame(gameID, data string) error {

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image</title>
+</head>
+<body>
+<h1>Upload Image</h1>
+<form action="http://localhost:8080/upload-image" method="post" enctype="multipart/form-data">
+    <label for="company_id">Company ID:</label><br>
+    <input type="text" id="company_id" name="company_id" required><br><br>
+
+    <label for="game_id">Game ID:</label><br>
+    <input type="text" id="game_id" name="game_id" required><br><br>
+
+    <label for="image">Select Image:</label><br>
+    <input type="file" id="image" name="image" accept=".jpg, .jpeg, .png" required><br><br>
+
+    <button type="submit">Upload</button>
+</form>
+</body>
+</html>

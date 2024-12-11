@@ -13,13 +13,27 @@ func NewImageRepository(db *sql.DB) *ImageRepository {
 	return &ImageRepository{db: db}
 }
 
-// SaveImageForGame сохраняет изображение для игры
-func (r *ImageRepository) SaveImageForGame(companyID, gameID string, url string) error {
-	query := `INSERT INTO images (company_id, game_id, url, created_at)
-	VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`
+// SaveImageForGame сохраняет или обновляет изображение для игры
+func (r *ImageRepository) SaveImageForGame(companyID, gameID, url string) error {
+	// Проверяем, существует ли запись
+	var exists bool
+	checkQuery := `SELECT EXISTS (SELECT 1 FROM images WHERE company_id = $1 AND game_id = $2)`
+	err := r.db.QueryRow(checkQuery, companyID, gameID).Scan(&exists)
+	if err != nil {
+		return err
+	}
 
-	_, err := r.db.Exec(query, companyID, gameID, url)
-	return err
+	if exists {
+		// Обновляем запись
+		updateQuery := `UPDATE images SET url = $1, created_at = CURRENT_TIMESTAMP WHERE company_id = $2 AND game_id = $3`
+		_, err := r.db.Exec(updateQuery, url, companyID, gameID)
+		return err
+	} else {
+		// Вставляем новую запись
+		insertQuery := `INSERT INTO images (company_id, game_id, url, created_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`
+		_, err := r.db.Exec(insertQuery, companyID, gameID, url)
+		return err
+	}
 }
 
 // GetImagesByCompanyID возвращает изображения по ID компании

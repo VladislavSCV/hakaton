@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"hakaton/internal/models"
 	"hakaton/internal/repository"
 	"hakaton/pkg/utils"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -52,6 +55,17 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 
 	uuidq := uuid.New().String()
 
+	// Генерация токена
+	token, err := utils.GenerateJWT(input.CompanyID, uuidq)
+	if err != nil {
+		//sh.logger.Error("failed to generate token",
+		//	zap.Int("id", userDB.ID),
+		//	zap.Error(err),
+		//)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	// Сохраняем пользователя в базе данных
 	user, err := h.repoUser.CreateUser(uuidq, input.Email, hashedPassword.Hash, hashedPassword.Salt, input.CompanyID)
 	if err != nil {
@@ -59,7 +73,7 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "user": user})
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "user": user, "token": token})
 }
 
 // LoginUser обрабатывает логин пользователя
@@ -116,13 +130,11 @@ func (h *Handler) LoginUser(c *gin.Context) {
 	// Возвращаем успешный ответ
 	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully", "token": token, "user": user})
 }
-
-// CreateOrUpdateGame обрабатывает создание или обновление игры
 func (h *Handler) CreateOrUpdateGame(c *gin.Context) {
 	var input struct {
-		CompanyID string `json:"company_id" binding:"required"`
-		Name      string `json:"name" binding:"required"`
-		Data      string `json:"data"`
+		CompanyID string      `json:"company_id" binding:"required"`
+		Name      string      `json:"name"`
+		Data      models.Game `json:"data"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -130,35 +142,28 @@ func (h *Handler) CreateOrUpdateGame(c *gin.Context) {
 		return
 	}
 
-	// Проверяем, существует ли игра
-	game, err := h.repoGame.GetGameByName(input.CompanyID, input.Name)
+	err := h.repoGame.CreateOrUpdateGame(input.CompanyID, input.Name, input.Data)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch game", "error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error updating game", "error": err.Error()})
 		return
 	}
 
-	if game != nil {
-		// Если игра существует, обновляем её данные
-		err = h.repoGame.UpdateGame(game.ID, input.Data)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update game", "error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "Game updated successfully"})
-	} else {
-		// Если игра не существует, создаём новую
-		err = h.repoGame.CreateGame(input.CompanyID, input.Name, input.Data)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create game", "error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "Game created successfully"})
-	}
+	c.JSON(http.StatusOK, gin.H{"message": "Game created or updated successfully"})
 }
 
 func (h *Handler) UploadImageHandler(c *gin.Context) {
+	ensureUploadDir()
+
+	var input struct {
+		GameID string `form:"game_id" binding:"required"` // Заменяем JSON на form
+	}
+
+	// Используем ShouldBind для обработки form-data
+	if err := c.ShouldBind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		return
+	}
+
 	// Извлекаем файл из запроса
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -166,17 +171,27 @@ func (h *Handler) UploadImageHandler(c *gin.Context) {
 		return
 	}
 
-	// Получаем company_id из запроса
-	companyID := c.PostForm("company_id")
-	if companyID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "company_id is required"})
+	// Проверяем авторизацию
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing Authorization header"})
+		c.Abort()
 		return
 	}
 
-	// Получаем game_id из запроса (если изображение связано с конкретной игрой)
-	gameID := c.PostForm("game_id")
-	if gameID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "game_id is required"})
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Authorization header format"})
+		c.Abort()
+		return
+	}
+	token := parts[1]
+
+	// Проверяем JWT
+	compID, _, err := utils.ParseJWT(token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		c.Abort()
 		return
 	}
 
@@ -187,8 +202,8 @@ func (h *Handler) UploadImageHandler(c *gin.Context) {
 		return
 	}
 
-	// Генерируем уникальное имя файла (привязка только к companyID и gameID)
-	fileName := fmt.Sprintf("company_%s_game_%s%s", companyID, gameID, ext)
+	// Генерируем уникальное имя файла
+	fileName := fmt.Sprintf("company_%s_game_%s%s", compID, input.GameID, ext)
 
 	// Путь для сохранения файла
 	savePath := filepath.Join("uploads", fileName)
@@ -203,7 +218,7 @@ func (h *Handler) UploadImageHandler(c *gin.Context) {
 	imageURL := fmt.Sprintf("/uploads/%s", fileName)
 
 	// Сохраняем данные изображения в базе данных
-	err = h.repoImage.SaveImageForGame(companyID, gameID, imageURL)
+	err = h.repoImage.SaveImageForGame(compID, input.GameID, imageURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save image in database"})
 		return
@@ -214,4 +229,11 @@ func (h *Handler) UploadImageHandler(c *gin.Context) {
 		"message": "Image uploaded successfully",
 		"url":     imageURL,
 	})
+}
+
+func ensureUploadDir() {
+	err := os.MkdirAll("uploads", os.ModePerm)
+	if err != nil {
+		log.Fatalf("Failed to create upload directory: %v", err)
+	}
 }

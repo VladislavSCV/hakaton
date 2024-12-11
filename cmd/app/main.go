@@ -33,14 +33,20 @@ func main() {
 
 	r.Use(middleware.CORSMiddleware())
 
+	// Сервируем статические файлы из папки uploads
+	r.Static("/uploads", "../../internal/uploads")
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 
 	r.POST("/registration", handler.RegisterUser)
 	r.POST("/login", handler.LoginUser)
-	r.POST("/game", handler.CreateOrUpdateGame)
+	r.POST("/create_or_update_game", handler.CreateOrUpdateGame)
 	r.POST("/upload-image", handler.UploadImageHandler)
+	r.GET("/game_data", handler.GetGame)
+
+	//r.POST("create_update_game", handler.CreateGameHandler)
 
 	r.POST("/create_company", handler.CreateCompany)
 
