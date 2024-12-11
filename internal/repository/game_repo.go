@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hakaton/internal/models"
+	"log"
 )
 
 type GameRepository struct {
@@ -56,19 +57,20 @@ func (r *GameRepository) GetGameByID(gameID int) (*models.Game, error) {
 }
 
 // GetGameByName получает игру по названию и ID компании
-func (r *GameRepository) GetGameByName(companyID, name string) (*models.Game, error) {
+func (r *GameRepository) GetGameByName(companyID, name string) (*models.Game, string, error) {
 	query := `SELECT id, company_id, name, data FROM games WHERE company_id = $1 AND name = $2`
 	var game models.Game
+	var data string
 
 	// Выполняем запрос в базу данных и сканируем результат в структуру game
-	err := r.db.QueryRow(query, companyID, name).Scan(&game.ID, &game.CompanyID, &game.Name, &game.Data)
+	err := r.db.QueryRow(query, companyID, name).Scan(&game.ID, &game.CompanyID, &game.Name, &data)
 	if err != nil {
-		// Если ошибка - возвращаем ее
-		return nil, err
+		log.Println(err)
+		return nil, "", err
 	}
 
 	// Возвращаем найденную игру
-	return &game, nil
+	return &game, data, nil
 }
 
 // CreateOrUpdateGame обрабатывает создание или обновление игры

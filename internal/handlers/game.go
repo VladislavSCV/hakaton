@@ -89,7 +89,7 @@ func (h *Handler) GetGame(c *gin.Context) {
 		return
 	}
 
-	game, err := h.repoGame.GetGameByName(input.CompanyID, input.Name)
+	game, data, err := h.repoGame.GetGameByName(input.CompanyID, input.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get game"})
 		return
@@ -100,5 +100,5 @@ func (h *Handler) GetGame(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, game)
+	c.JSON(http.StatusOK, gin.H{"data": data})
 }

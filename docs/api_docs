@@ -65,3 +65,42 @@
     },
     "message": "Company created successfully"
 }
+
+
+/upload-image
+
+тут еще токен в header передавать нужно в виде:
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI...
+
+game_id: 1
+image: `file`
+
+{
+    "message": "Image uploaded successfully",
+    "url": "/uploads/company_482a1bea-c3e4-4c99-b0d5-df89a0d5eed3_game_1.jpg"
+}
+
+
+/create_or_update_game
+
+{
+    "company_id": "482a1bea-c3e4-4c99-b0d5-df89a0d5eed3",
+    "name": "gameName",
+    "data": {"data":{"store":[{"id":0,"title":"","count":1,"duration":1000,"level":0,"style":{"background":"#909090","borderRadius":0,"border":"none"}},{"id":1,"title":"","count":1,"duration":1000,"level":0,"style":{"background":"#d07c7c","borderRadius":0,"border":"none"}}],"field":{"count":0,"timerActive":"Индикатор","timerDuration":60,"startGameActive":false}}}
+}
+
+{
+    "message": "Game created or updated successfully"
+}
+
+
+/game_data
+
+{
+    "company_id": "482a1bea-c3e4-4c99-b0d5-df89a0d5eed3",
+    "name": "gameName"
+}
+
+{
+    "data": "{\"id\":\"\",\"company_id\":\"\",\"name\":\"\",\"data\":{\"store\":[{\"id\":0,\"title\":\"\",\"count\":1,\"duration\":1000,\"level\":0,\"style\":{\"background\":\"#909090\",\"borderRadius\":0,\"border\":\"none\"}},{\"id\":1,\"title\":\"\",\"count\":1,\"duration\":1000,\"level\":0,\"style\":{\"background\":\"#d07c7c\",\"borderRadius\":0,\"border\":\"none\"}}],\"field\":{\"count\":0,\"timerActive\":\"Индикатор\",\"timerDuration\":60,\"startGameActive\":false}},\"created_at\":\"\",\"updated_at\":\"\",\"company_name\":\"\"}"
+}
