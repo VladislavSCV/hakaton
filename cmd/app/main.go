@@ -3,8 +3,9 @@ package main
 import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq" // Подключение драйвера PostgreSQL
+	_ "github.com/lib/pq"
 	"hakaton/internal/handlers"
+	"hakaton/internal/middleware"
 	"hakaton/internal/repository"
 	"log"
 	"net/http"
@@ -29,6 +30,9 @@ func main() {
 
 	// Настраиваем маршруты
 	r := gin.Default()
+
+	r.Use(middleware.CORSMiddleware())
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
