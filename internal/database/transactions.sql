@@ -1,6 +1,6 @@
 -- Таблица пользователей
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     salt TEXT NOT NULL,
@@ -12,9 +12,9 @@ CREATE TABLE users (
 
 -- Таблица компаний
 CREATE TABLE companies (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    api_key TEXT NOT NULL,
+--     api_key TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -22,7 +22,7 @@ CREATE TABLE companies (
 -- Таблица игр
 CREATE TABLE games (
     id SERIAL PRIMARY KEY,
-    company_id INT NOT NULL,
+    company_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
     data TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +33,7 @@ CREATE TABLE games (
 -- Таблица изображений
 CREATE TABLE images (
     id SERIAL PRIMARY KEY,
-    company_id INT NOT NULL,
+    company_id UUID NOT NULL,
     game_id INT NOT NULL,
     url TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

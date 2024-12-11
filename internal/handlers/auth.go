@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"hakaton/internal/repository"
 	"hakaton/pkg/utils"
 	"net/http"
@@ -25,9 +27,15 @@ func NewHandler(repoUser *repository.UserRepository, repoGame *repository.GameRe
 // RegisterUser обрабатывает регистрацию пользователя
 func (h *Handler) RegisterUser(c *gin.Context) {
 	var input struct {
-		Email     string `json:"email" binding:"required,email"`
-		Password  string `json:"password" binding:"required,min=6"`
-		CompanyID string `json:"company_id"`
+		Email          string `json:"email" binding:"required,email"`
+		Password       string `json:"password" binding:"required,min=6"`
+		SecondPassword string `json:"second_password" binding:"required,min=6"`
+		CompanyID      string `json:"company_id"`
+	}
+
+	if input.Password != input.SecondPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": errors.New("password not equal second password")})
+		return
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -42,21 +50,23 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 		return
 	}
 
+	uuidq := uuid.New().String()
+
 	// Сохраняем пользователя в базе данных
-	err = h.repoUser.CreateUser(input.Email, hashedPassword.Hash, hashedPassword.Salt, input.CompanyID)
+	user, err := h.repoUser.CreateUser(uuidq, input.Email, hashedPassword.Hash, hashedPassword.Salt, input.CompanyID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user", "error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "user": user})
 }
 
 // LoginUser обрабатывает логин пользователя
 func (h *Handler) LoginUser(c *gin.Context) {
 	var input struct {
 		Email    string `json:"email" binding:"required,email"`
-		Password string `json:"password" binding:"required"`
+		Password string `json:"password" binding:"required,min=6"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {

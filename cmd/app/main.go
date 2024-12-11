@@ -38,6 +38,8 @@ func main() {
 	r.POST("/game", handler.CreateOrUpdateGame)
 	r.POST("/upload-image", handler.UploadImageHandler)
 
+	r.POST("/create_company", handler.CreateCompany)
+
 	//router.POST("/images", handler.SaveImageHandler)
 	//router.POST("/users", handler.CreateUserHandler)
 	//router.GET("/users/:email", handler.GetUserByEmailHandler)

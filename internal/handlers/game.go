@@ -2,21 +2,11 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"hakaton/internal/repository"
 	"net/http"
 )
 
-type GameHandler struct {
-	repo *repository.GameRepository
-}
-
-// NewGameHandler создает новый экземпляр GameHandler
-func NewGameHandler(repo *repository.GameRepository) *GameHandler {
-	return &GameHandler{repo: repo}
-}
-
 // SaveImageHandler сохраняет изображение для игры
-func (h *GameHandler) SaveImageHandler(c *gin.Context) {
+func (h *Handler) SaveImageHandler(c *gin.Context) {
 	var req struct {
 		CompanyID string `json:"company_id"`
 		GameID    string `json:"game_id"`
@@ -28,7 +18,7 @@ func (h *GameHandler) SaveImageHandler(c *gin.Context) {
 		return
 	}
 
-	err := h.repo.SaveImageForGame(req.CompanyID, req.GameID, req.ImageURL)
+	err := h.repoImage.SaveImageForGame(req.CompanyID, req.GameID, req.ImageURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 		return
@@ -38,7 +28,7 @@ func (h *GameHandler) SaveImageHandler(c *gin.Context) {
 }
 
 // CreateGameHandler создает новую игру
-func (h *GameHandler) CreateGameHandler(c *gin.Context) {
+func (h *Handler) CreateGameHandler(c *gin.Context) {
 	var req struct {
 		CompanyID string `json:"company_id"`
 		Name      string `json:"name"`
@@ -50,7 +40,7 @@ func (h *GameHandler) CreateGameHandler(c *gin.Context) {
 		return
 	}
 
-	err := h.repo.CreateGame(req.CompanyID, req.Name, req.Data)
+	err := h.repoGame.CreateGame(req.CompanyID, req.Name, req.Data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create game"})
 		return
@@ -60,7 +50,7 @@ func (h *GameHandler) CreateGameHandler(c *gin.Context) {
 }
 
 // UpdateGameHandler обновляет данные игры
-func (h *GameHandler) UpdateGameHandler(c *gin.Context) {
+func (h *Handler) UpdateGameHandler(c *gin.Context) {
 	gameIDStr := c.Param("game_id")
 	//gameID, err := strconv.Atoi(gameIDStr)
 	//if err != nil {
@@ -77,7 +67,7 @@ func (h *GameHandler) UpdateGameHandler(c *gin.Context) {
 		return
 	}
 
-	err := h.repo.UpdateGame(gameIDStr, req.Data)
+	err := h.repoGame.UpdateGame(gameIDStr, req.Data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update game"})
 		return
@@ -87,7 +77,7 @@ func (h *GameHandler) UpdateGameHandler(c *gin.Context) {
 }
 
 // GetGameByNameHandler получает игру по имени и компании
-func (h *GameHandler) GetGameByNameHandler(c *gin.Context) {
+func (h *Handler) GetGameByNameHandler(c *gin.Context) {
 	companyIDStr := c.Param("company_id")
 	name := c.Param("name")
 
@@ -97,7 +87,7 @@ func (h *GameHandler) GetGameByNameHandler(c *gin.Context) {
 	//	return
 	//}
 
-	game, err := h.repo.GetGameByName(companyIDStr, name)
+	game, err := h.repoGame.GetGameByName(companyIDStr, name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get game"})
 		return

@@ -10,5 +10,5 @@ type User struct {
 	Salt         string          `json:"salt"`
 	Data         json.RawMessage `json:"data"`
 	CreatedAt    string          `json:"created_at"`
-	CompanyName  string          `json:"company_name"`
+	Company      *Company        `json:"company"`
 }
