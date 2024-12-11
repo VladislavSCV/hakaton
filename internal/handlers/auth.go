@@ -67,13 +67,13 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 	}
 
 	// Сохраняем пользователя в базе данных
-	user, err := h.repoUser.CreateUser(uuidq, input.Email, hashedPassword.Hash, hashedPassword.Salt, input.CompanyID)
+	_, err = h.repoUser.CreateUser(uuidq, input.Email, hashedPassword.Hash, hashedPassword.Salt, input.CompanyID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user", "error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "user": user, "token": token})
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "token": token})
 }
 
 // LoginUser обрабатывает логин пользователя
@@ -155,7 +155,7 @@ func (h *Handler) UploadImageHandler(c *gin.Context) {
 	ensureUploadDir()
 
 	var input struct {
-		GameID string `form:"game_id" binding:"required"` // Заменяем JSON на form
+		GameID string `form:"game_id" binding:"required"`
 	}
 
 	// Используем ShouldBind для обработки form-data
