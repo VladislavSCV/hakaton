@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Подключение к базе данных
-	db, err := sql.Open("postgres", "postgresql://hakaton_db_user:VhcZZoDRUymYsiCPH2rbwGwSPnDDqsaT@dpg-ctbguh3tq21c73e8g030-a.oregon-postgres.render.com/hakaton_db")
+	db, err := sql.Open("postgres", "postgresql://hakaton_db_mb0j_user:7rush65cnM1OymY6cgTuhhJ7jQjl6uGW@dpg-ctcv9sa3esus73bn4ij0-a.oregon-postgres.render.com/hakaton_db_mb0j")
 	if err != nil {
 		log.Fatal("Failed to connect to the database:", err)
 	}
